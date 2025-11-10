@@ -45,12 +45,25 @@ The foundation is ready! Now it's time to:
 3. **Read QUICKSTART.md** for your next steps
 4. **Follow DEVELOPMENT_GUIDE.md** for the full roadmap
 
+### For Deployment
+
+**Automated CI/CD is ready!** Push to main and your game deploys automatically.
+
+- **[DEPLOYMENT_SETUP.md](.github/DEPLOYMENT_SETUP.md)** - 5-minute setup guide
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Complete deployment documentation
+
+**Supported Platforms:**
+- ✅ **GitHub Pages** - Auto-deploy (no keys needed!)
+- ✅ **itch.io** - Game distribution (optional, requires API key)
+- ✅ **Cloudflare Pages** - Custom domain (optional, requires token)
+
 ### Key Documentation
 
 - **[QUICKSTART.md](QUICKSTART.md)** - Start here! Your first steps
 - **[GAME_DESIGN.md](GAME_DESIGN.md)** - Complete game vision and mechanics
 - **[DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)** - Step-by-step build guide (6 sprints)
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Technical implementation details
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - CI/CD and hosting setup
 
 ---
 
