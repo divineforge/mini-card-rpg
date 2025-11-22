@@ -10,6 +10,7 @@ enum CardType {
 	POTION,     # Heals player
 	GOLD,       # Currency pickup
 	SPECIAL,    # Special abilities (fireball, etc.)
+	EXIT,       # Stairs to next floor
 }
 
 @export var type: CardType = CardType.MONSTER
@@ -57,5 +58,12 @@ static func create_player() -> CardData:
 	var data = CardData.new()
 	data.type = CardType.PLAYER
 	data.title = "Hero"
+	data.value = 0
+	return data
+
+static func create_exit() -> CardData:
+	var data = CardData.new()
+	data.type = CardType.EXIT
+	data.title = "EXIT"
 	data.value = 0
 	return data

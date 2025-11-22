@@ -95,6 +95,10 @@ func update_visual():
 			color = Color.PURPLE
 			title_text = card_data.title
 			value_text = str(card_data.value)
+		CardData.CardType.EXIT:
+			color = Color.CYAN
+			title_text = "EXIT"
+			value_text = ">>>"
 
 	background.color = color
 	label.text = title_text

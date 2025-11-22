@@ -12,6 +12,16 @@ var player_position: Vector2i = Vector2i(1, 1)  # Center of 3x3 grid
 var cards: Array = []  # Flat array of all cards on board
 var grid: Array = []   # 2D array for position lookup
 
+# Equipped weapon (consumable - used on next monster attack)
+var equipped_weapon_name: String = ""
+var equipped_weapon_value: int = 0
+
+# Floor progress tracking
+var steps_taken: int = 0
+var steps_to_exit: int = 15  # Steps needed to reach exit
+var exit_spawned: bool = false
+const EXIT_SPAWN_THRESHOLD: int = 5  # Spawn exit when within this many steps
+
 # Card generation weights (for variety)
 var card_weights = {
 	CardData.CardType.MONSTER: 40,
@@ -24,6 +34,10 @@ var card_weights = {
 signal player_clashed(card_type: CardData.CardType, value: int)
 signal turn_completed
 signal game_over
+signal weapon_equipped(weapon_name: String, weapon_value: int)
+signal weapon_used
+signal progress_updated(current_steps: int, max_steps: int)
+signal floor_completed
 
 func _ready():
 	initialize_grid()
@@ -59,6 +73,12 @@ func clear_board():
 	cards.clear()
 	initialize_grid()
 	player_card = null
+	# Reset equipped weapon
+	equipped_weapon_name = ""
+	equipped_weapon_value = 0
+	# Reset floor progress
+	steps_taken = 0
+	exit_spawned = false
 
 func create_card(data: CardData, grid_pos: Vector2i) -> Card:
 	var card = Card.new()
@@ -156,15 +176,28 @@ func resolve_clash(target_card: Card):
 			resolve_potion_pickup(target_card)
 		CardData.CardType.GOLD:
 			resolve_gold_pickup(target_card)
+		CardData.CardType.EXIT:
+			resolve_exit(target_card)
 		_:
 			move_player_to(target_pos)
 
 	player_clashed.emit(card_data.type, card_data.value)
 
+	# Increment steps after each move
+	increment_steps()
+
 func resolve_monster_clash(monster_card: Card):
 	var monster_hp = monster_card.card_data.value
 	var player_attack = GameManager.player_stats.attack
 	var target_pos = monster_card.grid_position  # Store position before removing
+
+	# Add equipped weapon bonus if available
+	if equipped_weapon_value > 0:
+		player_attack += equipped_weapon_value
+		# Consume the weapon
+		equipped_weapon_name = ""
+		equipped_weapon_value = 0
+		weapon_used.emit()
 
 	# Player attacks monster
 	monster_hp -= player_attack
@@ -187,8 +220,10 @@ func resolve_monster_clash(monster_card: Card):
 
 func resolve_weapon_pickup(weapon_card: Card):
 	var target_pos = weapon_card.grid_position
-	# Weapon gives attack boost
-	GameManager.player_stats.attack += weapon_card.card_data.value
+	# Equip weapon (consumable - used on next monster attack)
+	equipped_weapon_name = weapon_card.card_data.title
+	equipped_weapon_value = weapon_card.card_data.value
+	weapon_equipped.emit(equipped_weapon_name, equipped_weapon_value)
 	remove_card(weapon_card)
 	move_player_to(target_pos)
 	turn_completed.emit()

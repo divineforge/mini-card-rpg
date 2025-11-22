@@ -7,6 +7,8 @@ extends Control
 @onready var floor_label: Label = $HUD/FloorLabel
 @onready var game_over_panel: Panel = $GameOverPanel
 @onready var start_panel: Panel = $StartPanel
+@onready var weapon_slot: ColorRect = $EquipmentPanel/WeaponSlot
+@onready var weapon_name_label: Label = $EquipmentPanel/WeaponSlot/WeaponName
 
 func _ready():
 	# Connect to GameManager signals
@@ -18,6 +20,8 @@ func _ready():
 
 	# Connect dungeon board signals
 	dungeon_board.game_over.connect(_on_game_over)
+	dungeon_board.weapon_equipped.connect(_on_weapon_equipped)
+	dungeon_board.weapon_used.connect(_on_weapon_used)
 
 	# Show start screen
 	show_start_screen()
@@ -35,6 +39,7 @@ func start_game():
 	GameManager.new_game()
 	dungeon_board.setup_board()
 	update_hud()
+	clear_weapon_display()
 
 func update_hud():
 	if GameManager.player_stats:
@@ -80,3 +85,15 @@ func _input(event):
 	# ESC to quit
 	if event.is_action_pressed("ui_cancel"):
 		get_tree().quit()
+
+# Weapon display functions
+func _on_weapon_equipped(weapon_name: String, weapon_value: int):
+	weapon_slot.color = Color.ORANGE
+	weapon_name_label.text = "%s\n+%d" % [weapon_name, weapon_value]
+
+func _on_weapon_used():
+	clear_weapon_display()
+
+func clear_weapon_display():
+	weapon_slot.color = Color(0.2, 0.2, 0.2, 1)
+	weapon_name_label.text = ""
