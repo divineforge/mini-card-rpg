@@ -4,38 +4,51 @@ on:
   push:
     branches:
       - main
-      - claude/**
   pull_request:
     branches:
       - main
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch:
 
 env:
-  GODOT_VERSION: 4.4
+  GODOT_VERSION: "4.5.1"
   EXPORT_NAME: mini-card-dungeon
-  PROJECT_PATH: .
 
 jobs:
   export-web:
     name: Web Export
-    runs-on: ubuntu-22.04
-    container:
-      image: barichello/godot-ci:4.4
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           lfs: true
 
-      - name: Setup
-        run: |
-          mkdir -v -p ~/.local/share/godot/export_templates/
-          mv /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v3
+        with:
+          version: ${{ env.GODOT_VERSION }}
+          use-dotnet: false
+          include-templates: true
+
+      - name: Verify Godot
+        run: godot --version
+
+      - name: Import Project
+        run: godot --headless --import
 
       - name: Web Build
         run: |
           mkdir -v -p build/web
           godot --headless --verbose --export-release "Web" build/web/index.html
+
+      - name: Add coi-serviceworker for SharedArrayBuffer
+        run: |
+          # Download coi-serviceworker for cross-origin isolation (needed for threading)
+          curl -fsSL https://raw.githubusercontent.com/nicloay/coi-serviceworker/master/coi-serviceworker.min.js -o build/web/coi-serviceworker.min.js
+          # Add script tag to index.html
+          sed -i 's|<head>|<head>\n\t<script src="coi-serviceworker.min.js"></script>|' build/web/index.html
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -43,36 +56,9 @@ jobs:
           name: web
           path: build/web
 
-      - name: Install rsync 📚
-        run: |
-          apt-get update && apt-get install -y rsync
-
-      - name: Deploy to GitHub Pages 🚀
+      - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         if: github.ref == 'refs/heads/main'
         with:
           branch: gh-pages
           folder: build/web
-
-  # Uncomment this job when you provide itch.io credentials
-  # export-itch:
-  #   name: Deploy to itch.io
-  #   runs-on: ubuntu-22.04
-  #   needs: export-web
-  #   if: github.ref == 'refs/heads/main'
-  #   steps:
-  #     - name: Download Artifact
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: web
-  #         path: build/web
-  #
-  #     - name: Deploy to itch.io
-  #       uses: manleydev/butler-publish-itchio-action@master
-  #       env:
-  #         BUTLER_CREDENTIALS: ${{ secrets.BUTLER_API_KEY }}
-  #         CHANNEL: html5
-  #         ITCH_GAME: ${{ secrets.ITCH_GAME }}
-  #         ITCH_USER: ${{ secrets.ITCH_USER }}
-  #         PACKAGE: build/web
-  #         VERSION: ${{ github.sha }}
