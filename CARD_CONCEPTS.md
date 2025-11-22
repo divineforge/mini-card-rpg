@@ -48,7 +48,7 @@ When clashing with a Monster:
 | **Sword** | +3 | Orange | Classic weapon. Solid attack improvement. |
 | **Axe** | +4 | Orange | Heavy weapon. Maximum damage potential. |
 
-**Effect**: Permanently increases your ATK stat. Stack multiple weapons to become deadly!
+**Effect**: Weapons are **consumable** - equipping one adds it to your weapon slot. The bonus is used on your next monster attack, then the weapon is consumed. Only one weapon can be held at a time.
 
 ---
 
@@ -68,6 +68,28 @@ When clashing with a Monster:
 |------|-------------|-------|-------------|
 | **Potion** | +3 to +6 | Green | Magical healing elixir. Restores HP instantly. |
 | **Gold** | 5-15 | Yellow | Precious coins. Track your high score! |
+
+---
+
+### Exit (Floor Progression)
+
+| Type | Color | Description |
+|------|-------|-------------|
+| **EXIT** | Cyan | Stairs to the next dungeon floor. |
+
+**Effect**: Stepping on the EXIT card advances you to the next floor. The board resets with new cards and difficulty increases.
+
+**Spawn Condition**: The EXIT card appears when you're within **5 steps** of the floor goal. Each move counts as 1 step towards the exit (default: 15 steps per floor).
+
+---
+
+## Floor Progress
+
+- Each floor requires **15 steps** before the exit appears
+- A progress bar shows: `Exit: X/15`
+- When within 5 steps of the goal, an **EXIT** card spawns
+- Reaching the EXIT advances to the next floor
+- Each new floor resets progress but keeps your stats (HP, Gold, Attack)
 
 ---
 

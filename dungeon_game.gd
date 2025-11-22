@@ -9,6 +9,8 @@ extends Control
 @onready var start_panel: Panel = $StartPanel
 @onready var weapon_slot: ColorRect = $EquipmentPanel/WeaponSlot
 @onready var weapon_name_label: Label = $EquipmentPanel/WeaponSlot/WeaponName
+@onready var exit_progress_bar: ProgressBar = $HUD/ExitProgressBar
+@onready var exit_progress_label: Label = $HUD/ExitProgressLabel
 
 func _ready():
 	# Connect to GameManager signals
@@ -22,6 +24,7 @@ func _ready():
 	dungeon_board.game_over.connect(_on_game_over)
 	dungeon_board.weapon_equipped.connect(_on_weapon_equipped)
 	dungeon_board.weapon_used.connect(_on_weapon_used)
+	dungeon_board.progress_updated.connect(_on_progress_updated)
 
 	# Show start screen
 	show_start_screen()
@@ -40,6 +43,7 @@ func start_game():
 	dungeon_board.setup_board()
 	update_hud()
 	clear_weapon_display()
+	reset_progress_bar()
 
 func update_hud():
 	if GameManager.player_stats:
@@ -97,3 +101,14 @@ func _on_weapon_used():
 func clear_weapon_display():
 	weapon_slot.color = Color(0.2, 0.2, 0.2, 1)
 	weapon_name_label.text = ""
+
+# Progress bar functions
+func _on_progress_updated(current_steps: int, max_steps: int):
+	exit_progress_bar.max_value = max_steps
+	exit_progress_bar.value = current_steps
+	exit_progress_label.text = "Exit: %d/%d" % [current_steps, max_steps]
+
+func reset_progress_bar():
+	exit_progress_bar.max_value = dungeon_board.steps_to_exit
+	exit_progress_bar.value = 0
+	exit_progress_label.text = "Exit: 0/%d" % dungeon_board.steps_to_exit

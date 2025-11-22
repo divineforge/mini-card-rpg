@@ -254,6 +254,59 @@ func resolve_gold_pickup(gold_card: Card):
 	turn_completed.emit()
 	fill_empty_spaces()
 
+func resolve_exit(exit_card: Card):
+	var target_pos = exit_card.grid_position
+	remove_card(exit_card)
+	move_player_to(target_pos)
+	# Go to next floor
+	floor_completed.emit()
+	GameManager.next_floor()
+	# Reset for new floor
+	await get_tree().create_timer(0.3).timeout
+	setup_board()
+	progress_updated.emit(0, steps_to_exit)
+
+func increment_steps():
+	steps_taken += 1
+	progress_updated.emit(steps_taken, steps_to_exit)
+
+	# Check if we should spawn EXIT
+	if not exit_spawned and (steps_to_exit - steps_taken) <= EXIT_SPAWN_THRESHOLD:
+		spawn_exit_card()
+
+func spawn_exit_card():
+	if exit_spawned:
+		return
+
+	# Find a random empty adjacent position or any empty position
+	var empty_positions: Array[Vector2i] = []
+	for y in range(GRID_SIZE.y):
+		for x in range(GRID_SIZE.x):
+			var pos = Vector2i(x, y)
+			if grid[y][x] == null and pos != player_position:
+				empty_positions.append(pos)
+
+	if empty_positions.size() > 0:
+		# Prefer adjacent positions
+		var adjacent = get_adjacent_empty_positions()
+		var spawn_pos: Vector2i
+		if adjacent.size() > 0:
+			spawn_pos = adjacent[randi() % adjacent.size()]
+		else:
+			spawn_pos = empty_positions[randi() % empty_positions.size()]
+
+		create_card(CardData.create_exit(), spawn_pos)
+		exit_spawned = true
+
+func get_adjacent_empty_positions() -> Array[Vector2i]:
+	var empty: Array[Vector2i] = []
+	var directions = [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]
+	for dir in directions:
+		var pos = player_position + dir
+		if is_valid_position(pos) and grid[pos.y][pos.x] == null:
+			empty.append(pos)
+	return empty
+
 func move_player_to(new_pos: Vector2i):
 	# Clear old position
 	grid[player_position.y][player_position.x] = null
