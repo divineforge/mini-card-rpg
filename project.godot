@@ -11,8 +11,8 @@ config_version=5
 [application]
 
 config/name="Mini Card Grid Dungeon"
-run/main_scene="uid://yiv8xd80fx8e"
-config/features=PackedStringArray("4.4", "Mobile")
+run/main_scene="res://dungeon_game.tscn"
+config/features=PackedStringArray("4.5", "Mobile")
 config/icon="res://icon.svg"
 
 [autoload]

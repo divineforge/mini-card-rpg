@@ -1,99 +1,123 @@
 class_name Card
-extends Area2D
+extends Control
 
 @export var card_data: CardData
-var is_revealed: bool = false
 var grid_position: Vector2i
+var is_player_card: bool = false
 
-@onready var card_back = $CardBack
-@onready var card_front = $CardFront
-@onready var animation_player = $AnimationPlayer
+# Visual components (will be created dynamically)
+var background: ColorRect
+var label: Label
+var value_label: Label
 
-signal revealed(card_data: CardData)
-signal effect_triggered(card_type: CardData.CardType)
+signal card_clicked(card: Card)
 
 func _ready():
-	# Start face-down
-	if card_back:
-		card_back.visible = true
-	if card_front:
-		card_front.visible = false
+	setup_visuals()
+
+func setup_visuals():
+	# Set card size for click detection
+	custom_minimum_size = Vector2(80, 80)
+	size = Vector2(80, 80)
+
+	# Create background
+	background = ColorRect.new()
+	background.custom_minimum_size = Vector2(80, 80)
+	background.size = Vector2(80, 80)
+	background.mouse_filter = Control.MOUSE_FILTER_IGNORE  # Let parent handle clicks
+	add_child(background)
+
+	# Create title label
+	label = Label.new()
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.size = Vector2(80, 40)
+	label.position = Vector2(0, 10)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(label)
+
+	# Create value label
+	value_label = Label.new()
+	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	value_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	value_label.size = Vector2(80, 40)
+	value_label.position = Vector2(0, 40)
+	value_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(value_label)
+
+	# Make clickable
+	mouse_filter = Control.MOUSE_FILTER_STOP
 
 func setup(data: CardData, grid_pos: Vector2i):
 	card_data = data
 	grid_position = grid_pos
+	is_player_card = data.type == CardData.CardType.PLAYER
+	update_visual()
 
-	if card_front and card_data:
-		# Set up the front of the card based on card type
-		update_card_visual()
-
-func update_card_visual():
-	if not card_data or not card_front:
-		return
-
-	# You'll replace this with actual icons/sprites for each card type
-	var color = Color.WHITE
-	match card_data.type:
-		CardData.CardType.EMPTY:
-			color = Color.GRAY
-		CardData.CardType.ENEMY:
-			color = Color.RED
-		CardData.CardType.TREASURE:
-			color = Color.YELLOW
-		CardData.CardType.POTION:
-			color = Color.GREEN
-		CardData.CardType.TRAP:
-			color = Color.DARK_RED
-		CardData.CardType.EXIT:
-			color = Color.CYAN
-
-	card_front.modulate = color
-
-func reveal():
-	if is_revealed:
-		return
-
-	is_revealed = true
-
-	# Play flip animation
-	if animation_player and animation_player.has_animation("flip"):
-		animation_player.play("flip")
-	else:
-		# Simple instant reveal if no animation
-		if card_back:
-			card_back.visible = false
-		if card_front:
-			card_front.visible = true
-
-	revealed.emit(card_data)
-
-	# Small delay before triggering effect
-	await get_tree().create_timer(0.3).timeout
-	trigger_effect()
-
-func trigger_effect():
+func update_visual():
 	if not card_data:
 		return
 
-	effect_triggered.emit(card_data.type)
+	if not background:
+		setup_visuals()
+
+	# Set color based on card type
+	var color = Color.GRAY
+	var title_text = ""
+	var value_text = ""
 
 	match card_data.type:
-		CardData.CardType.ENEMY:
-			GameManager.start_combat(card_data)
-		CardData.CardType.TREASURE:
-			GameManager.add_gold(card_data.gold_amount)
+		CardData.CardType.PLAYER:
+			color = Color.DODGER_BLUE
+			title_text = "HERO"
+			value_text = ""
+		CardData.CardType.MONSTER:
+			color = Color.INDIAN_RED
+			title_text = card_data.title
+			value_text = str(card_data.value) + " HP"
+		CardData.CardType.WEAPON:
+			color = Color.ORANGE
+			title_text = card_data.title
+			value_text = "+" + str(card_data.value)
+		CardData.CardType.SHIELD:
+			color = Color.SLATE_GRAY
+			title_text = card_data.title
+			value_text = str(card_data.value)
 		CardData.CardType.POTION:
-			GameManager.heal_player(card_data.heal_amount)
-		CardData.CardType.TRAP:
-			GameManager.damage_player(card_data.damage_amount)
-		CardData.CardType.EXIT:
-			GameManager.next_floor()
-		CardData.CardType.EMPTY:
-			pass  # Nothing happens
+			color = Color.LIME_GREEN
+			title_text = "Potion"
+			value_text = "+" + str(card_data.value)
+		CardData.CardType.GOLD:
+			color = Color.GOLD
+			title_text = "Gold"
+			value_text = str(card_data.value)
+		CardData.CardType.SPECIAL:
+			color = Color.PURPLE
+			title_text = card_data.title
+			value_text = str(card_data.value)
 
-func _on_animation_player_animation_finished(anim_name):
-	if anim_name == "flip":
-		if card_back:
-			card_back.visible = false
-		if card_front:
-			card_front.visible = true
+	background.color = color
+	label.text = title_text
+	value_label.text = value_text
+
+func set_value(new_value: int):
+	if card_data:
+		card_data.value = new_value
+		update_visual()
+
+func _gui_input(event: InputEvent):
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			card_clicked.emit(self)
+			accept_event()  # Prevent event from propagating
+
+func animate_to(target_position: Vector2, duration: float = 0.2):
+	var tween = create_tween()
+	tween.tween_property(self, "position", target_position, duration)
+	return tween
+
+func flash_damage():
+	var tween = create_tween()
+	tween.tween_property(background, "modulate", Color.WHITE, 0.1)
+	tween.tween_property(background, "modulate", Color.RED, 0.1)
+	tween.tween_property(background, "modulate", Color.WHITE, 0.1)

@@ -1,10 +1,10 @@
 class_name PlayerStats
 extends Resource
 
-@export var max_hp: int = 100
-@export var current_hp: int = 100
-@export var attack: int = 10
-@export var defense: int = 5
+@export var max_hp: int = 10
+@export var current_hp: int = 10
+@export var attack: int = 1
+@export var defense: int = 0
 @export var gold: int = 0
 
 signal hp_changed(old_value, new_value)
