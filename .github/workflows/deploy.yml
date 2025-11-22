@@ -11,7 +11,7 @@ on:
   workflow_dispatch:  # Allow manual trigger
 
 env:
-  GODOT_VERSION: 4.4
+  GODOT_VERSION: "4.4.1"
   EXPORT_NAME: mini-card-dungeon
   PROJECT_PATH: .
 
@@ -20,22 +20,52 @@ jobs:
     name: Web Export
     runs-on: ubuntu-22.04
     container:
-      image: barichello/godot-ci:4.4
+      image: barichello/godot-ci:4.4.1-stable
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           lfs: true
 
-      - name: Setup
+      - name: Setup Export Templates
         run: |
           mkdir -v -p ~/.local/share/godot/export_templates/
-          mv /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          # The templates in the container are at /root/.local/share/godot/export_templates/
+          # Copy them to the runner user's location
+          if [ -d "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable" ]; then
+            cp -r /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable ~/.local/share/godot/export_templates/
+          fi
+          # List what we have for debugging
+          echo "Available export templates:"
+          ls -la ~/.local/share/godot/export_templates/ || echo "No templates found"
+
+      - name: Verify Godot
+        run: |
+          godot --version
+          echo "Checking export presets..."
+          cat export_presets.cfg | head -20
 
       - name: Web Build
         run: |
           mkdir -v -p build/web
-          godot --headless --verbose --export-release "Web" build/web/index.html
+          godot --headless --verbose --export-release "Web" build/web/index.html 2>&1 || {
+            echo "Export failed, checking for common issues..."
+            echo "Current directory:"
+            pwd
+            ls -la
+            echo "Export presets:"
+            cat export_presets.cfg
+            exit 1
+          }
+
+      - name: Verify Build Output
+        run: |
+          echo "Build output:"
+          ls -la build/web/ || echo "No build output!"
+          if [ ! -f "build/web/index.html" ]; then
+            echo "ERROR: index.html not created!"
+            exit 1
+          fi
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -43,11 +73,11 @@ jobs:
           name: web
           path: build/web
 
-      - name: Install rsync 📚
+      - name: Install rsync
         run: |
           apt-get update && apt-get install -y rsync
 
-      - name: Deploy to GitHub Pages 🚀
+      - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         if: github.ref == 'refs/heads/main'
         with:
