@@ -48,7 +48,7 @@ jobs:
       - name: Add coi-serviceworker for SharedArrayBuffer
         run: |
           # Download coi-serviceworker for cross-origin isolation (needed for threading)
-          curl -fsSL https://raw.githubusercontent.com/nicloay/coi-serviceworker/master/coi-serviceworker.min.js -o build/web/coi-serviceworker.min.js
+          curl -fsSL https://raw.githubusercontent.com/gzuidhof/coi-serviceworker/master/coi-serviceworker.min.js -o build/web/coi-serviceworker.min.js
           # Add script tag to index.html
           sed -i 's|<head>|<head>\n\t<script src="coi-serviceworker.min.js"></script>|' build/web/index.html
 
